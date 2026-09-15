@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI OCR Token Calculator</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --background-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+            --highlight-bg: #e9f2fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .calculator-container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0, 86, 179, 0.3);
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #004494;
+        }
+
+        .result-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px dashed var(--border-color);
+            display: none; 
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 1em;
+            padding: 5px 0;
+        }
+
+        .sub-metric {
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .main-metric {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .total-price {
+            font-weight: bold;
+            font-size: 1.3em;
+            color: var(--primary-color);
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid var(--border-color);
+            background-color: var(--highlight-bg);
+            padding: 15px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h2>OCR Pricing Calculator</h2>
+        
+        <!-- Input Fields -->
+        <div class="form-group">
+            <label for="numPages">No. of Pages (existing)</label>
+            <input type="number" id="numPages" placeholder="e.g., 500" min="1">
+        </div>
+
+        <div class="form-group">
+            <label for="wordsPerPage">Approx. Words per Page</label>
+            <select id="wordsPerPage">
+                <option value="50">50 Words</option>
+                <option value="100">100 Words</option>
+                <option value="200">200 Words</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="containsImage">Contains Image?</label>
+            <select id="containsImage">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="subscriptionPackage">Customer Subscription Package</label>
+            <select id="subscriptionPackage">
+                <!-- Values represent the calculated cost per single token (Price / Total Tokens) -->
+                <option value="0.00003">1M Tokens (USD 30)</option>
+                <option value="0.000029">5M Tokens (USD 145)</option>
+                <option value="0.000028">10M Tokens (USD 280)</option>
+                <option value="0.0000275">20M Tokens (USD 550)</option>
+                <option value="0.000027">50M Tokens (USD 1350)</option>
+            </select>
+        </div>
+
+        <button onclick="calculatePrice()">Calculate Estimated Cost</button>
+
+        <!-- Results Display -->
+        <div class="result-section" id="resultSection">
+            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1em; color: #333;">Token Breakdown</h3>
+            
+            <div class="result-row sub-metric">
+                <span>Vision Tokens:</span>
+                <span id="displayVisionTokens">0</span>
+            </div>
+            <div class="result-row sub-metric">
+                <span>Prompt Tokens (Text):</span>
+                <span id="displayPromptTokens">0</span>
+            </div>
+            <div class="result-row main-metric">
+                <span>Total Input Tokens:</span>
+                <span id="displayInputTokens">0</span>
+            </div>
+            <div class="result-row main-metric" style="margin-top: 15px;">
+                <span>Total Output Tokens:</span>
+                <span id="displayOutputTokens">0</span>
+            </div>
+            
+            <div class="result-row total-price">
+                <span>Approx. Cost:</span>
+                <span id="displayPrice">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculatePrice() {
+            // 1. Gather Inputs
+            const numPages = parseFloat(document.getElementById('numPages').value) || 0;
+            const wordsPerPage = parseFloat(document.getElementById('wordsPerPage').value);
+            const containsImage = document.getElementById('containsImage').value;
+            const costPerToken = parseFloat(document.getElementById('subscriptionPackage').value);
+
+            if (numPages <= 0) {
+                alert("Please enter a valid number of pages.");
+                return;
+            }
+
+            // 2. Token Calculation Logic 
+            const wordsToTokensRatio = 1.33; // Standard ratio: 1 word ≈ 1.33 tokens
+            
+            // Calculate Vision Tokens (Flat 1560 per page if images are present)
+            const visionTokens = containsImage === 'yes' ? (numPages * 1560) : 0;
+
+            // Calculate Prompt Tokens (Text-based input derived from words per page)
+            const promptTokens = Math.ceil(numPages * wordsPerPage * wordsToTokensRatio);
+            
+            // Calculate Input Tokens (Vision Tokens + Prompt Tokens)
+            const inputTokens = visionTokens + promptTokens;
+            
+            // Output tokens (24% of Total Input Tokens)
+            const outputTokens = Math.ceil(inputTokens * 0.24); 
+
+            // Total billable tokens
+            const totalTokens = inputTokens + outputTokens;
+
+            // 3. Cost Calculation
+            const approxCost = totalTokens * costPerToken;
+
+            // 4. Update the UI
+            document.getElementById('displayVisionTokens').innerText = visionTokens.toLocaleString();
+            document.getElementById('displayPromptTokens').innerText = promptTokens.toLocaleString();
+            document.getElementById('displayInputTokens').innerText = inputTokens.toLocaleString();
+            document.getElementById('displayOutputTokens').innerText = outputTokens.toLocaleString();
+            
+            document.getElementById('displayPrice').innerText = approxCost.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 4 
+            });
+
+            // Reveal the results block
+            document.getElementById('resultSection').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
