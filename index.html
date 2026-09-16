@@ -12,6 +12,7 @@
             --text-color: #333333;
             --border-color: #dddddd;
             --highlight-bg: #e9f2fa;
+            --disclaimer-color: #777777;
         }
 
         body {
@@ -32,14 +33,50 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
         }
 
         h2 {
             text-align: center;
             color: var(--primary-color);
             margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* Token Pricing Table Styling */
+        .pricing-table-container {
             margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f0ebd8; /* Matching the green header from your image slightly */
+            background-color: #a3c9a8; 
+            color: #000;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        th:first-child, td:first-child {
+            text-align: left;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
         }
 
         .form-group {
@@ -101,15 +138,8 @@
             padding: 5px 0;
         }
 
-        .sub-metric {
-            color: #555;
-            font-size: 0.95em;
-        }
-
-        .main-metric {
-            font-weight: 600;
-            color: #333;
-        }
+        .sub-metric { color: #555; font-size: 0.95em; }
+        .main-metric { font-weight: 600; color: #333; }
 
         .total-price {
             font-weight: bold;
@@ -122,6 +152,20 @@
             padding: 15px;
             border-radius: 5px;
         }
+
+        /* Disclaimer Styling */
+        .disclaimer-section {
+            margin-top: 25px;
+            font-size: 0.75em;
+            color: var(--disclaimer-color);
+            line-height: 1.4;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+
+        .disclaimer-section p {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -129,7 +173,47 @@
     <div class="calculator-container">
         <h2>OCR Pricing Calculator</h2>
         
-        <!-- Input Fields -->
+        <!-- Token Purchase Plans Table -->
+        <div class="pricing-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tokens</th>
+                        <th>Base Cost per 1M</th>
+                        <th>Selling Cost (USD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1,000,000.00</td>
+                        <td>$ 10.00</td>
+                        <td>$ 30.00</td>
+                    </tr>
+                    <tr>
+                        <td>5,000,000.00</td>
+                        <td>$ 50.00</td>
+                        <td>$ 145.00</td>
+                    </tr>
+                    <tr>
+                        <td>10,000,000.00</td>
+                        <td>$ 100.00</td>
+                        <td>$ 280.00</td>
+                    </tr>
+                    <tr>
+                        <td>20,000,000.00</td>
+                        <td>$ 200.00</td>
+                        <td>$ 550.00</td>
+                    </tr>
+                    <tr>
+                        <td>50,000,000.00</td>
+                        <td>$ 500.00</td>
+                        <td>$ 1,350.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Manual Input Fields -->
         <div class="form-group">
             <label for="numPages">No. of Pages (existing)</label>
             <input type="number" id="numPages" placeholder="e.g., 500" min="1">
@@ -155,7 +239,6 @@
         <div class="form-group">
             <label for="subscriptionPackage">Customer Subscription Package</label>
             <select id="subscriptionPackage">
-                <!-- Values represent the calculated cost per single token (Price / Total Tokens) -->
                 <option value="0.00003">1M Tokens (USD 30)</option>
                 <option value="0.000029">5M Tokens (USD 145)</option>
                 <option value="0.000028">10M Tokens (USD 280)</option>
@@ -192,11 +275,18 @@
                 <span id="displayPrice">$0.00</span>
             </div>
         </div>
+
+        <!-- Disclaimers -->
+        <div class="disclaimer-section">
+            <p><strong>Disclaimer:</strong> This calculator is for illustration purposes and may vary based on the actual document type.</p>
+            <p>AI can make mistakes. Failed responses will consume tokens.</p>
+            <p>JBS is not responsible for errors caused by AI, including but not limited to: wrong files uploaded by the user, or the upload of documents which are not relevant to the particular function.</p>
+            <p>&copy; 2026 JBS. All rights reserved.</p>
+        </div>
     </div>
 
     <script>
         function calculatePrice() {
-            // 1. Gather Inputs
             const numPages = parseFloat(document.getElementById('numPages').value) || 0;
             const wordsPerPage = parseFloat(document.getElementById('wordsPerPage').value);
             const containsImage = document.getElementById('containsImage').value;
@@ -207,28 +297,14 @@
                 return;
             }
 
-            // 2. Token Calculation Logic 
-            const wordsToTokensRatio = 1.33; // Standard ratio: 1 word ≈ 1.33 tokens
-            
-            // Calculate Vision Tokens (Flat 1560 per page if images are present)
+            const wordsToTokensRatio = 1.33; 
             const visionTokens = containsImage === 'yes' ? (numPages * 1560) : 0;
-
-            // Calculate Prompt Tokens (Text-based input derived from words per page)
             const promptTokens = Math.ceil(numPages * wordsPerPage * wordsToTokensRatio);
-            
-            // Calculate Input Tokens (Vision Tokens + Prompt Tokens)
             const inputTokens = visionTokens + promptTokens;
-            
-            // Output tokens (24% of Total Input Tokens)
             const outputTokens = Math.ceil(inputTokens * 0.24); 
-
-            // Total billable tokens
             const totalTokens = inputTokens + outputTokens;
-
-            // 3. Cost Calculation
             const approxCost = totalTokens * costPerToken;
 
-            // 4. Update the UI
             document.getElementById('displayVisionTokens').innerText = visionTokens.toLocaleString();
             document.getElementById('displayPromptTokens').innerText = promptTokens.toLocaleString();
             document.getElementById('displayInputTokens').innerText = inputTokens.toLocaleString();
@@ -241,7 +317,6 @@
                 maximumFractionDigits: 4 
             });
 
-            // Reveal the results block
             document.getElementById('resultSection').style.display = 'block';
         }
     </script>
