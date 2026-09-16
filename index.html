@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI OCR Token Calculator</title>
+    <title>JBM AI Assist Token Calculator</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -98,11 +98,10 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 12px;
-            font-size: 1em;
+            font-size: 1.1em;
             padding: 5px 0;
         }
 
-        .sub-metric { color: #555; font-size: 0.95em; }
         .main-metric { font-weight: 600; color: #333; }
 
         .total-price {
@@ -171,29 +170,21 @@
 <body>
 
     <div class="calculator-container">
-        <h2>OCR Pricing Calculator</h2>
+        <h2>JBM AI Assist Token Calculator</h2>
         
         <!-- Manual Input Fields -->
         <div class="form-group">
+            <label for="documentType">Document Type</label>
+            <select id="documentType">
+                <option value="Document (PDF)">Document (PDF)</option>
+                <option value="Document (Image)">Document (Image)</option>
+                <option value="Document (Image PDF)">Document (Image PDF)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
             <label for="numPages">No. of Pages (existing)</label>
             <input type="number" id="numPages" placeholder="e.g., 500" min="1">
-        </div>
-
-        <div class="form-group">
-            <label for="wordsPerPage">Approx. Words per Page</label>
-            <select id="wordsPerPage">
-                <option value="50">50 Words</option>
-                <option value="100">100 Words</option>
-                <option value="200">200 Words</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="containsImage">Contains Image?</label>
-            <select id="containsImage">
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
         </div>
 
         <div class="form-group">
@@ -211,23 +202,11 @@
 
         <!-- Results Display -->
         <div class="result-section" id="resultSection">
-            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1em; color: #333;">Token Breakdown</h3>
+            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1em; color: #333;">Estimation Results</h3>
             
-            <div class="result-row sub-metric">
-                <span>Vision Tokens:</span>
-                <span id="displayVisionTokens">0</span>
-            </div>
-            <div class="result-row sub-metric">
-                <span>Prompt Tokens (Text):</span>
-                <span id="displayPromptTokens">0</span>
-            </div>
             <div class="result-row main-metric">
-                <span>Total Input Tokens:</span>
-                <span id="displayInputTokens">0</span>
-            </div>
-            <div class="result-row main-metric" style="margin-top: 15px;">
-                <span>Total Output Tokens:</span>
-                <span id="displayOutputTokens">0</span>
+                <span>Overall Total Tokens:</span>
+                <span id="displayTotalTokens">0</span>
             </div>
             
             <div class="result-row total-price">
@@ -278,9 +257,8 @@
 
     <script>
         function calculatePrice() {
+            const documentType = document.getElementById('documentType').value;
             const numPages = parseFloat(document.getElementById('numPages').value) || 0;
-            const wordsPerPage = parseFloat(document.getElementById('wordsPerPage').value);
-            const containsImage = document.getElementById('containsImage').value;
             const costPerToken = parseFloat(document.getElementById('subscriptionPackage').value);
 
             if (numPages <= 0) {
@@ -288,18 +266,25 @@
                 return;
             }
 
+            // Document Type Logic Mapping
+            // Evaluates to true if the selected option is Document (Image) or Document (Image PDF)
+            const isImage = documentType === "Document (Image)" || documentType === "Document (Image PDF)";
+
+            const assumedWordsPerPage = 150; 
             const wordsToTokensRatio = 1.33; 
-            const visionTokens = containsImage === 'yes' ? (numPages * 1560) : 0;
-            const promptTokens = Math.ceil(numPages * wordsPerPage * wordsToTokensRatio);
+            
+            // Apply Vision tokens (1560) only if logic indicates it is an image-based document
+            const visionTokens = isImage ? (numPages * 1560) : 0;
+            const promptTokens = Math.ceil(numPages * assumedWordsPerPage * wordsToTokensRatio);
+            
             const inputTokens = visionTokens + promptTokens;
             const outputTokens = Math.ceil(inputTokens * 0.24); 
+            
             const totalTokens = inputTokens + outputTokens;
             const approxCost = totalTokens * costPerToken;
 
-            document.getElementById('displayVisionTokens').innerText = visionTokens.toLocaleString();
-            document.getElementById('displayPromptTokens').innerText = promptTokens.toLocaleString();
-            document.getElementById('displayInputTokens').innerText = inputTokens.toLocaleString();
-            document.getElementById('displayOutputTokens').innerText = outputTokens.toLocaleString();
+            // Update UI
+            document.getElementById('displayTotalTokens').innerText = totalTokens.toLocaleString();
             
             document.getElementById('displayPrice').innerText = approxCost.toLocaleString('en-US', {
                 style: 'currency',
