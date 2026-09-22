@@ -148,9 +148,14 @@
 <body>
 
     <div class="calculator-container">
-        <h2>JBM AI Assist Token Calculator</h2>
+        <h2>JBM SmartCapture Token Calculator</h2>
         
         <!-- Manual Input Fields (Triggers calculation automatically on change/input) -->
+            <div class="form-group">
+            <label for="numPages">How many pages do you expect to scan?</label>
+            <input type="number" id="numPages" placeholder="e.g., 500" min="0" oninput="calculatePrice()">
+        </div>
+        
         <div class="form-group">
             <label for="documentType">Document Type</label>
             <select id="documentType" onchange="calculatePrice()">
@@ -159,12 +164,6 @@
                 <option value="Document (Image PDF)">Document (Image PDF)</option>
             </select>
         </div>
-
-        <div class="form-group">
-            <label for="numPages">No. of Pages (existing)</label>
-            <input type="number" id="numPages" placeholder="e.g., 500" min="0" oninput="calculatePrice()">
-        </div>
-
         <!-- Results Display -->
         <div class="result-section" id="resultSection">
             <div class="result-row main-metric">
