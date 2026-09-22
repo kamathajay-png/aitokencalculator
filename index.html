@@ -33,7 +33,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 550px;
+            max-width: 600px;
         }
 
         h2 {
@@ -70,52 +70,25 @@
             box-shadow: 0 0 5px rgba(0, 86, 179, 0.3);
         }
 
-        button {
-            width: 100%;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #004494;
-        }
-
         .result-section {
             margin-top: 25px;
             padding-top: 20px;
             border-top: 2px dashed var(--border-color);
-            display: none; 
         }
 
         .result-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 1.1em;
+            margin-bottom: 15px;
+            font-size: 1.2em;
             padding: 5px 0;
-        }
-
-        .main-metric { font-weight: 600; color: #333; }
-
-        .total-price {
-            font-weight: bold;
-            font-size: 1.3em;
-            color: var(--primary-color);
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 2px solid var(--border-color);
             background-color: var(--highlight-bg);
             padding: 15px;
             border-radius: 5px;
-            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
         }
+
+        .main-metric { font-weight: bold; color: var(--primary-color); }
 
         /* Token Pricing Table Styling */
         .pricing-table-container {
@@ -153,6 +126,11 @@
             border-bottom: none;
         }
 
+        .dynamic-cost {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
         /* Disclaimer Styling */
         .disclaimer-section {
             font-size: 0.75em;
@@ -172,10 +150,10 @@
     <div class="calculator-container">
         <h2>JBM AI Assist Token Calculator</h2>
         
-        <!-- Manual Input Fields -->
+        <!-- Manual Input Fields (Triggers calculation automatically on change/input) -->
         <div class="form-group">
             <label for="documentType">Document Type</label>
-            <select id="documentType">
+            <select id="documentType" onchange="calculatePrice()">
                 <option value="Document (PDF)">Document (PDF)</option>
                 <option value="Document (Image)">Document (Image)</option>
                 <option value="Document (Image PDF)">Document (Image PDF)</option>
@@ -183,35 +161,15 @@
         </div>
 
         <div class="form-group">
-            <label for="numPages">No. of Pages </label>
-            <input type="number" id="numPages" placeholder="e.g., 500" min="1">
+            <label for="numPages">No. of Pages (existing)</label>
+            <input type="number" id="numPages" placeholder="e.g., 500" min="0" oninput="calculatePrice()">
         </div>
-
-        <div class="form-group">
-            <label for="subscriptionPackage">Customer Subscription Package</label>
-            <select id="subscriptionPackage">
-                <option value="0.00003">1M Tokens (USD 30)</option>
-                <option value="0.000029">5M Tokens (USD 145)</option>
-                <option value="0.000028">10M Tokens (USD 280)</option>
-                <option value="0.0000275">20M Tokens (USD 550)</option>
-                <option value="0.000027">50M Tokens (USD 1350)</option>
-            </select>
-        </div>
-
-        <button onclick="calculatePrice()">Calculate Estimated Cost</button>
 
         <!-- Results Display -->
         <div class="result-section" id="resultSection">
-            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.1em; color: #333;">Estimation Results</h3>
-            
             <div class="result-row main-metric">
                 <span>Overall Total Tokens:</span>
                 <span id="displayTotalTokens">0</span>
-            </div>
-            
-            <div class="result-row total-price">
-                <span>Approx. Cost:</span>
-                <span id="displayPrice">$0.00</span>
             </div>
         </div>
 
@@ -222,28 +180,34 @@
                     <tr>
                         <th>Tokens</th>
                         <th>Amount (USD)</th>
+                        <th>Estimated Cost (USD)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>1,000,000.00</td>
                         <td>$ 30.00</td>
+                        <td class="dynamic-cost" id="cost-1m">$0.0000</td>
                     </tr>
                     <tr>
                         <td>5,000,000.00</td>
                         <td>$ 145.00</td>
+                        <td class="dynamic-cost" id="cost-5m">$0.0000</td>
                     </tr>
                     <tr>
                         <td>10,000,000.00</td>
                         <td>$ 280.00</td>
+                        <td class="dynamic-cost" id="cost-10m">$0.0000</td>
                     </tr>
                     <tr>
                         <td>20,000,000.00</td>
                         <td>$ 550.00</td>
+                        <td class="dynamic-cost" id="cost-20m">$0.0000</td>
                     </tr>
                     <tr>
                         <td>50,000,000.00</td>
                         <td>$ 1,350.00</td>
+                        <td class="dynamic-cost" id="cost-50m">$0.0000</td>
                     </tr>
                 </tbody>
             </table>
@@ -258,18 +222,15 @@
     <script>
         function calculatePrice() {
             const documentType = document.getElementById('documentType').value;
-            const numPages = parseFloat(document.getElementById('numPages').value) || 0;
-            const costPerToken = parseFloat(document.getElementById('subscriptionPackage').value);
+            const numPagesInput = document.getElementById('numPages').value;
+            const numPages = parseFloat(numPagesInput) || 0;
 
-            if (numPages <= 0) {
-                alert("Please enter a valid number of pages.");
+            if (numPages < 0) {
                 return;
             }
 
             // Document Type Logic Mapping
-            // Evaluates to true if the selected option is Document (Image) or Document (Image PDF)
             const isImage = documentType === "Document (Image)" || documentType === "Document (Image PDF)";
-
             const assumedWordsPerPage = 150; 
             const wordsToTokensRatio = 1.33; 
             
@@ -281,20 +242,33 @@
             const outputTokens = Math.ceil(inputTokens * 0.24); 
             
             const totalTokens = inputTokens + outputTokens;
-            const approxCost = totalTokens * costPerToken;
 
-            // Update UI
+            // Update Total Tokens UI
             document.getElementById('displayTotalTokens').innerText = totalTokens.toLocaleString();
-            
-            document.getElementById('displayPrice').innerText = approxCost.toLocaleString('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 4 
-            });
 
-            document.getElementById('resultSection').style.display = 'block';
+            // Cost per package rates mapped to table cell IDs
+            const packageRates = [
+                { id: 'cost-1m', rate: 0.00003 },
+                { id: 'cost-5m', rate: 0.000029 },
+                { id: 'cost-10m', rate: 0.000028 },
+                { id: 'cost-20m', rate: 0.0000275 },
+                { id: 'cost-50m', rate: 0.000027 }
+            ];
+
+            // Calculate and update each tier in the matrix
+            packageRates.forEach(pkg => {
+                const cost = totalTokens * pkg.rate;
+                // Enforce strictly 4 decimal places
+                document.getElementById(pkg.id).innerText = cost.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4 
+                });
+            });
         }
     </script>
 </body>
 </html>
+```<ElicitationsGroup>
+</ElicitationsGroup>
